@@ -46,6 +46,10 @@ figma.ui.onmessage = async (msg) => {
       reportOnDuplicateIcons(figma.currentPage.selection);
   }
 
+    if (msg.type === 'auto-colour-named-layers') {
+        autoColourNamedLayers(figma.currentPage.selection);
+    }
+
 }
 
 /*
@@ -98,7 +102,7 @@ function findDuplicates(layerNames) {
   return duplicates;
 }
 
-function reportOnDuplicateIcons(selection) {
+function reportOnDuplicateIcons() {
   const selectedLayers = figma.currentPage.selection;
   
   if (selectedLayers.length !== 1 || selectedLayers[0].type !== 'FRAME') {
@@ -458,4 +462,75 @@ function markForRemoval(node) {
         markForRemoval(child);
     }
   }
+}
+
+const colorVariableNames = [
+    'oi-line',
+    'oi-ellipse',
+    'oi-box',
+    'oi-incomplete-triangle',
+    'oi-vector',
+    'oi-fill',
+    'oi-triangle',
+    'oi-mini-dot',
+    'oi-medium-dot',
+    'oi-mini-square',
+    'oi-medium-square',
+    'oi-dot'
+];
+
+function autoColourNamedLayers() {
+    const selection = figma.currentPage.selection;
+
+    // Get all local variables
+    const localVariableCollections = figma.variables.getLocalVariableCollections();
+
+    // Find our color variables
+    const colorVariables = localVariableCollections.flatMap(collection =>
+        collection.variableIds.map(id => figma.variables.getVariableById(id))
+    ).filter(variable =>
+        variable !== null && colorVariableNames.includes(variable.name)
+    );
+
+    let appliedCount = 0;
+
+    function processNode(node) {
+        if ('name' in node) {
+            const matchingVariable = colorVariables.find(variable => variable.name === node.name);
+
+            if (matchingVariable) {
+                if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0) {
+                    // For fills
+                    const fills = clone(node.fills);
+                    fills[0] = figma.variables.setBoundVariableForPaint(fills[0], 'color', matchingVariable);
+                    node.fills = fills;
+                    appliedCount++;
+                }
+                if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
+                    // For strokes
+                    const strokes = clone(node.strokes);
+                    strokes[0] = figma.variables.setBoundVariableForPaint(strokes[0], 'color', matchingVariable);
+                    node.strokes = strokes;
+                    appliedCount++;
+                }
+            }
+        }
+
+        // Recursively process children if the node is a container (like a frame or group)
+        if ('children' in node) {
+            for (const child of node.children) {
+                processNode(child);
+            }
+        }
+    }
+
+    // Process each selected node
+    selection.forEach(processNode);
+
+    figma.notify(`Applied colors to ${appliedCount} property${appliedCount !== 1 ? 'ies' : 'y'}`);
+}
+
+
+function clone(val) {
+    return JSON.parse(JSON.stringify(val));
 }

@@ -13,8 +13,7 @@
     --blue-1: #E1F3FF;
     --red-4: #E05534;
     --red-1: #FBE9E4;
-    --green-4: #31BCAD;
-    --green-3: #0ED2BD;
+
 
     --font-family: Inter, Arial, sans-serif;
     --font-size-body: 11px;
@@ -22,7 +21,7 @@
     --border-radius-med: 5px;
     
     /* Semantic */
-    --primary-color: var(--green-4);
+    --primary-color: var(--blue-4);
     --field-border-color: var(--gray-3);
     --focus-ring-color: var(--primary-color);
     --semantic-text-muted: var(--gray-4);
@@ -31,11 +30,10 @@
     --semantic-text-label: var(--gray-7);
 }
 
-
 @media (prefers-color-scheme: dark) {
   /* Semantic remapping for dark mode */
   :root {
-      --primary-color: var(--green-3);
+      --primary-color: var(--blue-3);
       --field-border-color: var(--gray-5);
       --text-color: #FFF;
       --semantic-text-muted: var(--gray-4);
@@ -88,12 +86,17 @@ a.external {
 
 .button {
     border: none;
-    color: #333;
-    padding: 5px 12px;
+    color: #222;
+    padding: 6px 12px;
     border-radius: var(--border-radius-med);
     font-family: var(--font-family);
     font-size: var(--font-size-body);
     line-height: 1.3;
+    background: #F5F5F5;
+}
+
+.button:hover {
+  background: #E6E6E6;
 }
 
 .button.block {
@@ -102,25 +105,6 @@ a.external {
 
 .button[disabled] {
     opacity: .3;
-}
-
-.button.secondary {
-    border: 1px solid var(--gray-4, hotpink);
-    background: none;
-}
-
-@media (prefers-color-scheme: dark) {
-    .button.secondary {
-        border: 1px solid #FFF;
-    }
-}
-
-.button.primary {
-    border: 1px solid var(--primary-color);
-    background: var(--primary-color);
-    color: #FFF;
-    font-weight: 600;
-    -webkit-font-smoothing: antialiased;
 }
 
 .button:focus {
@@ -137,8 +121,11 @@ a.external {
         background: var(--gray-6);
         color: #FFF;
     }
-}
 
+  .button:hover {
+    background: var(--gray-5);
+  }
+}
 
 .block {
     width: 100%;
@@ -190,6 +177,8 @@ a.external {
       <button class="block button secondary" id="mergeAutoLayoutGroups">Merge auto layout groups</button>
       <button class="block button secondary" id="harmonizeStrokesAndFills">Harmonize strokes and fills</button>
       <button class="block button secondary" id="deleteKeyShapes">Delete keyshapes</button>
+      <button class="block button secondary" id="autoColourNamedLayers">Auto-colour named layers</button>
+
   </div>
 
   <h4>Debugging</h4>
@@ -239,6 +228,10 @@ a.external {
     
     document.getElementById('outlineAutomatically').onclick = () => {
         parent.postMessage({ pluginMessage: { type: 'outline-automatically' } }, '*');
+    };
+
+    document.getElementById('autoColourNamedLayers').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'auto-colour-named-layers' } }, '*');
     };
 
     document.getElementById('reportOnGroups').onclick = () => {
