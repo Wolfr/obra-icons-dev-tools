@@ -150,8 +150,10 @@ a.external {
   <div class="button-group vertical">
     <button class="block button secondary" id="createDevCopy">Create dev copy</button>
   </div>
+
+  <p>Note: you might have to click this button twice to get it to work.</p>
   
-  <p>The dev copy serves as the base for the SVG import. Use the ID on the top right of the generated artboard ah ye apply the generate icons action in code.</p>
+  <p>The dev copy serves as the base for the SVG import. Use the ID on the top right of the generated artboard to use with your SVG import code.</p>
 
   <h4>Production actions - Design</h4>
 
@@ -163,22 +165,27 @@ a.external {
 
   <h4>Production actions - Design</h4>
 
-  <button class="block button secondary" id="setConstraintsScale" disabled>Set all constraints to scale</button>
-  <p>Please use <a href="https://www.figma.com/community/plugin/1255914175202017737/VectorSymbols">VectorSymbols</a> for now until this feature is implemented.</p>
-
-  <button class="block button secondary" id="outlineAutomatically" disabled>Outline icons automatically</button>
-  <p>Please use <a href="https://www.figma.com/community/plugin/1255914175202017737/VectorSymbols">VectorSymbols</a> for now until this feature is implemented.</p>
-
-  <h4>Specific actions</h4>
-
-  <p>Use these specific actions during the design of the icons to test the script, while we refine it.</p>
-
   <div class="button-group vertical">
-      <button class="block button secondary" id="mergeAutoLayoutGroups">Merge auto layout groups</button>
-      <button class="block button secondary" id="harmonizeStrokesAndFills">Harmonize strokes and fills</button>
-      <button class="block button secondary" id="deleteKeyShapes">Delete keyshapes</button>
-      <button class="block button secondary" id="autoColourNamedLayers">Auto-colour named layers</button>
+    <button class="block button secondary" id="removeAllTopLevelTextLayers">Remove all top-level text layers</button>
 
+    <button class="block button secondary" id="removeBitmapImages">Remove Bitmap Images</button>
+
+    <button class="block button secondary" id="setConstraintsScale">Set all constraints to scale</button>
+
+    <button class="block button secondary" id="mergeAutoLayoutGroups">Merge auto layout groups</button>
+
+    <button class="block button secondary" id="harmonizeStrokesAndFills">Harmonize strokes and fills</button>
+
+    <button class="block button secondary" id="deleteKeyShapes">Delete keyshapes</button>
+
+    <button class="block button secondary" id="autoColourNamedLayers">Auto-colour named layers</button>
+
+  </div>
+
+  <h4>Production actions - To do</h4>
+  <div class="button-group vertical">
+    <button class="block button secondary" id="outlineAutomatically" disabled>Outline icons automatically</button>
+    <p>Please use <a href="https://www.figma.com/community/plugin/1255914175202017737/VectorSymbols">VectorSymbols</a> for now until this feature is implemented.</p>
   </div>
 
   <h4>Debugging</h4>
@@ -186,7 +193,7 @@ a.external {
   <div class="button-group vertical">
     <button class="block button secondary" id="reportFillAndStroke">Report on icons that have layers that both have a fill and a stroke</button>
     <button class="block button secondary" id="reportOnGroups" disabled>Report on icons that have groups inside them</button>
-
+    <button class="block button secondary" id="setStrokeWeightButton">Set Stroke Weight to 1px</button>
   </div>
 
 
@@ -225,7 +232,15 @@ a.external {
     document.getElementById('setConstraintsScale').onclick = () => {
         parent.postMessage({ pluginMessage: { type: 'set-constraints-scale' } }, '*');
     };
-    
+
+    document.getElementById('removeAllTopLevelTextLayers').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'remove-all-top-level-text-layers' } }, '*');
+    };
+
+    document.getElementById('removeBitmapImages').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'remove-all-bitmap-images' } }, '*');
+    };
+
     document.getElementById('outlineAutomatically').onclick = () => {
         parent.postMessage({ pluginMessage: { type: 'outline-automatically' } }, '*');
     };
@@ -241,6 +256,10 @@ a.external {
     document.getElementById('reportOnDuplicateIcons').onclick = () => {
         parent.postMessage({ pluginMessage: { type: 'report-on-duplicate-icons' } }, '*');
     };
+
+    document.getElementById('setStrokeWeightButton').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'set-stroke-weight-to-one' } }, '*')
+    }
 
     /* This code dynamically resizes the window based on the height of domELtargetNode */
     const domEltargetNode = document.getElementById('app');

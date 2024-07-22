@@ -34,6 +34,14 @@ figma.ui.onmessage = async (msg) => {
       reportFillAndStroke();
   }
 
+    if (msg.type === 'remove-all-bitmap-images') {
+        removeAllBitmapImages();
+    }
+
+    if (msg.type === 'remove-all-top-level-text-layers') {
+      removeAllTopLevelTextLayers();
+  }
+
   if (msg.type === 'set-constraints-scale') {
       setConstraintsScale(figma.currentPage.selection);
   }
@@ -45,6 +53,10 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'report-on-duplicate-icons') {
       reportOnDuplicateIcons(figma.currentPage.selection);
   }
+
+    if (msg.type === 'set-stroke-weight-to-one') {
+        setStrokeWeightToOne();
+    }
 
     if (msg.type === 'auto-colour-named-layers') {
         autoColourNamedLayers(figma.currentPage.selection);
@@ -179,6 +191,134 @@ function reportFillAndStroke(frame) {
   } else {
     figma.notify('No layers with both stroke and fill found.');
   }
+}
+
+
+/*
+ * Action - Remove all top level text layers
+ */
+
+function removeAllTopLevelTextLayers() {
+    console.log('Starting removeAllTopLevelTextLayers');
+
+    const selection = figma.currentPage.selection;
+
+    if (selection.length !== 1 || selection[0].type !== 'FRAME') {
+        console.error('Invalid selection');
+        figma.notify('Please select a single frame');
+        return;
+    }
+
+    const frame = selection[0];
+    console.log(`Processing frame: ${frame.name}`);
+
+    let removedCount = 0;
+
+    // Iterate through the direct children of the frame
+    for (let i = frame.children.length - 1; i >= 0; i--) {
+        const child = frame.children[i];
+        if (child.type === "TEXT") {
+            console.log(`Removing text layer: ${child.name}`);
+            child.remove();
+            removedCount++;
+        }
+    }
+
+    console.log(`Finished removeAllTopLevelTextLayers. Removed ${removedCount} text layers.`);
+    figma.notify(`Removed ${removedCount} top-level text layer${removedCount !== 1 ? 's' : ''}`);
+}
+
+
+/*
+ * Action - Remove all bitmap images
+ */
+
+function removeAllBitmapImages() {
+    console.log('Starting removeLayersWithBitmapFills');
+
+    const selection = figma.currentPage.selection;
+
+    if (selection.length !== 1 || selection[0].type !== 'FRAME') {
+        console.error('Invalid selection');
+        figma.notify('Please select a single frame');
+        return;
+    }
+
+    const frame = selection[0];
+    let removedCount = 0;
+
+    function processNode(node) {
+        if ("children" in node) {
+            // Process children in reverse order to avoid indexing issues when removing nodes
+            for (let i = node.children.length - 1; i >= 0; i--) {
+                processNode(node.children[i]);
+            }
+        }
+
+        if ("fills" in node) {
+            const hasBitmapFill = node.fills.some(fill => fill.type === "IMAGE");
+            if (hasBitmapFill) {
+                console.log(`Removing node with bitmap fill: ${node.name}`);
+                node.remove();
+                removedCount++;
+            }
+        }
+    }
+
+    processNode(frame);
+
+    console.log(`Finished removeLayersWithBitmapFills. Removed ${removedCount} layers with bitmap fills.`);
+    figma.notify(`Removed ${removedCount} layer${removedCount !== 1 ? 's' : ''} with bitmap fill${removedCount !== 1 ? 's' : ''}`);
+}
+
+
+/*
+ * Action - Set all children's constraints to scale
+ */
+
+function setConstraintsScale(selection = figma.currentPage.selection) {
+    console.log('Starting setConstraintsScale');
+
+    if (!selection || selection.length === 0) {
+        console.error('No selection provided');
+        figma.notify('Error: No layers selected');
+        return;
+    }
+
+    let count = 0;
+
+    function processNode(node) {
+        console.log(`Processing node: ${node.name}, type: ${node.type}`);
+
+        // Skip component instances
+        if (node.type === 'INSTANCE') {
+            console.log(`Skipping component instance: ${node.name}`);
+            return;
+        }
+
+        if ('constraints' in node) {
+            node.constraints = {
+                horizontal: 'SCALE',
+                vertical: 'SCALE'
+            };
+            count++;
+            console.log(`Set constraints to SCALE for: ${node.name}`);
+        }
+
+        if ('children' in node) {
+            console.log(`Node ${node.name} has ${node.children.length} children`);
+            for (const child of node.children) {
+                processNode(child);
+            }
+        }
+    }
+
+    for (const node of selection) {
+        processNode(node);
+    }
+
+    console.log(`Finished setConstraintsScale. Updated ${count} nodes.`);
+    figma.notify(`Updated constraints for ${count} layers`);
 }
 
 
@@ -379,90 +519,173 @@ function mergeAutoLayoutGroups(frame = figma.currentPage.selection[0]) {
  */
 
 function harmonizeStrokesAndFills(frame = figma.currentPage.selection[0]) {
-    // Instead of iterating through selected nodes, 
-    // we'll start the harmonization process on the provided frame
-    harmonizeOperations(frame);
+
+    if (!frame) {
+        console.error('No frame provided or selected');
+        figma.notify('Error: No frame provided or selected');
+        return;
+    }
+
+    console.log(`Frame type: ${frame.type}, name: ${frame.name}`);
+
+    // Check if the frame is actually a selection of multiple items
+    if (Array.isArray(figma.currentPage.selection) && figma.currentPage.selection.length > 1) {
+        figma.currentPage.selection.forEach((item, index) => {
+            console.log(`Processing selection item ${index + 1}:`, item);
+            harmonizeOperations(item);
+        });
+    } else {
+        console.log('Single frame or item, processing normally');
+        harmonizeOperations(frame);
+    }
+
 }
 
-// Recursive function to traverse node tree
 function harmonizeOperations(node) {
     setColors(node);
 
-    // If the node has children, recurse through them
     if ("children" in node) {
         for (const child of node.children) {
             harmonizeOperations(child);
         }
     }
-  
 }
 
-// Function to set the stroke and fill color of a node to black
 function setColors(node) {
 
-  if (
-    (
-      node.type === "VECTOR" ||
-      node.type === "ELLIPSE" ||
-      node.type === "RECTANGLE" ||
-      node.type === "STAR"
-    ) && node.name != "oi-fill"
-  ) {
-    node.strokes = [{ type: "SOLID", color: {r: 0, g: 0, b: 0} }];
-  }
+    if (
+        (
+            node.type === "VECTOR" ||
+            node.type === "ELLIPSE" ||
+            node.type === "RECTANGLE" ||
+            node.type === "STAR"
+        ) && node.name != "oi-fill"
+    ) {
+        node.strokes = [{ type: "SOLID", color: {r: 0, g: 0, b: 0} }];
+    }
 
-
-  if (
-    node.name === "oi-fill" && 
-    (
-      node.type === "VECTOR" ||
-      node.type === "ELLIPSE" ||
-      node.type === "STAR" ||
-      node.type === "RECTANGLE" ||
-      node.type === "BOOLEAN_OPERATION")
+    if (
+        node.name === "oi-fill" &&
+        (
+            node.type === "VECTOR" ||
+            node.type === "ELLIPSE" ||
+            node.type === "STAR" ||
+            node.type === "RECTANGLE" ||
+            node.type === "BOOLEAN_OPERATION"
+        )
     )  {
-      if (node.fills.length > 0) {
-         node.fills = [{ type: "SOLID", color: {r: 0, g: 0, b: 0} }];
-      }
-  }
+        if (node.fills.length > 0) {
+            node.fills = [{ type: "SOLID", color: {r: 0, g: 0, b: 0} }];
+        } else {
+            console.log(`Node ${node.name} has no fills`);
+        }
+    }
 }
-
 
 /*
  * Action - Remove key shape layers
  */
-
 let nodesToRemove = [];  // Array to hold nodes that will be removed
 
-function deleteKeyShapes(frame = figma.currentPage.selection[0]) {
+function deleteKeyShapes(selectionOrFrame = figma.currentPage.selection) {
+    console.log('Starting deleteKeyShapes');
+
     // Reset nodesToRemove array
     nodesToRemove = [];
 
-    // Start the removal marking process on the provided frame
-    markForRemoval(frame);
+    if (!selectionOrFrame || (Array.isArray(selectionOrFrame) && selectionOrFrame.length === 0)) {
+        console.error('No selection or frame provided');
+        figma.notify('Please select at least one item');
+        return;
+    }
+
+    // If a single frame is passed (like in createDevCopy), wrap it in an array
+    const itemsToProcess = Array.isArray(selectionOrFrame) ? selectionOrFrame : [selectionOrFrame];
+
+    // Process each item
+    itemsToProcess.forEach(item => {
+        console.log(`Processing item: ${item.name}, type: ${item.type}`);
+        markForRemoval(item);
+    });
 
     // Now remove all nodes marked for removal
+    let removedCount = nodesToRemove.length;
     nodesToRemove.forEach(node => {
+        console.log(`Removing node: ${node.name}`);
         node.remove();
     });
 
-    // Notify the user of completion
-    // figma.notify(`${nodesToRemove.length} key shape(s) removed successfully.`);
+    console.log(`Finished deleteKeyShapes. Removed ${removedCount} key shape(s).`);
+    if (figma.currentPage.selection.length > 0) {
+        // Only notify if it's being run independently (not as part of createDevCopy)
+        figma.notify(`${removedCount} key shape${removedCount !== 1 ? 's' : ''} removed`);
+    }
+    return removedCount;  // Return the count for use in createDevCopy
 }
 
 // Recursive function to mark layers named "Key shape template" for removal
 function markForRemoval(node) {
-  if (node.name === "Key shape template") {
-    nodesToRemove.push(node);
-  }
-
-  // If the node has children, recurse through them
-  if ("children" in node) {
-    for (const child of node.children) {
-        markForRemoval(child);
+    if (node.name === "Key shape template") {
+        console.log(`Marking for removal: ${node.name}`);
+        nodesToRemove.push(node);
     }
-  }
+
+    // If the node has children, recurse through them
+    if ("children" in node) {
+        node.children.forEach(child => {
+            markForRemoval(child);
+        });
+    }
 }
+
+/*
+ * Action - Stroke weight to one
+ */
+
+function setStrokeWeightToOne(selection = figma.currentPage.selection) {
+    console.log('Starting setStrokeWeightToOne');
+
+    if (!selection || selection.length === 0) {
+        console.error('No selection provided');
+        figma.notify('Error: No layers selected');
+        return;
+    }
+
+    let count = 0;
+
+    function processNode(node) {
+        console.log(`Processing node: ${node.name}, type: ${node.type}`);
+
+        if (node.name === "Key shape template") {
+            console.log(`Skipping Key shape template: ${node.name}`);
+            return;
+        }
+
+        if ('strokes' in node && node.strokes.length > 0) {
+            node.strokeWeight = 1;
+            count++;
+            console.log(`Set stroke weight to 1px for: ${node.name}`);
+        }
+
+        if ('children' in node) {
+            console.log(`Node ${node.name} has ${node.children.length} children`);
+            for (const child of node.children) {
+                processNode(child);
+            }
+        }
+    }
+
+    for (const node of selection) {
+        processNode(node);
+    }
+
+    console.log(`Finished setStrokeWeightToOne. Updated ${count} nodes.`);
+    figma.notify(`Updated stroke weight for ${count} layer${count !== 1 ? 's' : ''}`);
+}
+
+/*
+ * Action - Auto colour named layers with same name variables
+ */
 
 const colorVariableNames = [
     'oi-line',
