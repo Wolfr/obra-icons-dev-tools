@@ -352,8 +352,8 @@ function createDesignCopy() {
     // Clone the original frame
     const cloneFrame = originalFrame.clone();
 
-    // Position the clone to the left of the original, with 1500px offset
-    cloneFrame.x = originalFrame.x + originalFrame.width - 1500;
+    // Position the clone to the right of the original, with offset
+    cloneFrame.x = originalFrame.x + originalFrame.width + 1632;
 
     // Rename the cloned frame
     cloneFrame.name = "Obra Icons - Design export";
@@ -370,6 +370,9 @@ function createDesignCopy() {
 
     // Call harmonizeStrokesAndFills with the Icons frame as an argument
     harmonizeStrokesAndFills(iconsFrame);
+
+    // Adjust layer names for design copy
+    adjustLayerNamesForDesignCopy(iconsFrame)
 
     // Call deleteKeyShapes with the Icons frame as an argument
     deleteKeyShapes(iconsFrame);
@@ -635,6 +638,35 @@ function markForRemoval(node) {
         node.children.forEach(child => {
             markForRemoval(child);
         });
+    }
+}
+
+/*
+ * Action - Adjust layer names for design copy
+ * 1. Remove keywords from layer names. Keywords are in brackets.
+ * 2. Remove string 'oi-' from each layer name. Users are likely to want their own namespace or none.
+ */
+
+function removeBracketedContent(str) {
+    return str.replace(/\[.*?\]/g, '').trim();
+}
+
+function removeObraIconsPrefix(str) {
+    return str.replace(/^oi-/, '');
+}
+
+function adjustLayerNamesForDesignCopy(selection) {
+    // Ensure selection is an array
+    const nodes = Array.isArray(selection) ? selection : [selection];
+
+    for (const node of nodes) {
+        if ('name' in node) {
+            node.name = removeObraIconsPrefix(removeBracketedContent(node.name));
+        }
+
+        if ('children' in node) {
+            adjustLayerNamesForDesignCopy(node.children);
+        }
     }
 }
 
