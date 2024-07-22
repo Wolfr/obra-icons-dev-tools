@@ -34,12 +34,12 @@ figma.ui.onmessage = async (msg) => {
       reportFillAndStroke();
   }
 
-    if (msg.type === 'remove-all-bitmap-images') {
-        removeAllBitmapImages();
-    }
+  if (msg.type === 'remove-all-bitmap-images') {
+      removeAllBitmapImages();
+  }
 
-    if (msg.type === 'remove-all-top-level-text-layers') {
-      removeAllTopLevelTextLayers();
+  if (msg.type === 'remove-all-top-level-text-layers') {
+    removeAllTopLevelTextLayers();
   }
 
   if (msg.type === 'set-constraints-scale') {
@@ -54,14 +54,45 @@ figma.ui.onmessage = async (msg) => {
       reportOnDuplicateIcons(figma.currentPage.selection);
   }
 
-    if (msg.type === 'set-stroke-weight-to-one') {
-        setStrokeWeightToOne();
+  if (msg.type === 'set-stroke-weight') {
+      setStrokeWeight(figma.currentPage.selection, msg.weight);
+  }
+
+  if (msg.type === 'auto-colour-named-layers') {
+      autoColourNamedLayers(figma.currentPage.selection);
+  }
+
+    if (msg.type === 'snap-pixel') {
+        snapToPixel(figma.currentPage.selection, 1)
     }
 
-    if (msg.type === 'auto-colour-named-layers') {
-        autoColourNamedLayers(figma.currentPage.selection);
+    if (msg.type === 'snap-half-pixel') {
+        snapToPixel(figma.currentPage.selection, 0.5)
     }
 
+}
+
+function snapToNearestFraction(value, fraction) {
+    return Math.round(value / fraction) * fraction;
+}
+
+function snapToPixel(selection, fraction) {
+
+    for (const node of selection) {
+        if ('x' in node && 'y' in node) {
+            node.x = snapToNearestFraction(node.x, fraction);
+            node.y = snapToNearestFraction(node.y, fraction);
+
+            if ('width' in node && 'height' in node) {
+                node.resize(
+                    snapToNearestFraction(node.width, fraction),
+                    snapToNearestFraction(node.height, fraction)
+                );
+            }
+        }
+    }
+
+    figma.notify(`Elements snapped to nearest ${fraction === 1 ? 'pixel' : 'half pixel'}`);
 }
 
 /*
@@ -671,12 +702,10 @@ function adjustLayerNamesForDesignCopy(selection) {
 }
 
 /*
- * Action - Stroke weight to one
+ * Action - Stroke weight
  */
 
-function setStrokeWeightToOne(selection = figma.currentPage.selection) {
-    console.log('Starting setStrokeWeightToOne');
-
+function setStrokeWeight(selection = figma.currentPage.selection, weight) {
     if (!selection || selection.length === 0) {
         console.error('No selection provided');
         figma.notify('Error: No layers selected');
@@ -694,9 +723,8 @@ function setStrokeWeightToOne(selection = figma.currentPage.selection) {
         }
 
         if ('strokes' in node && node.strokes.length > 0) {
-            node.strokeWeight = 1;
+            node.strokeWeight = weight;
             count++;
-            console.log(`Set stroke weight to 1px for: ${node.name}`);
         }
 
         if ('children' in node) {
@@ -711,8 +739,7 @@ function setStrokeWeightToOne(selection = figma.currentPage.selection) {
         processNode(node);
     }
 
-    console.log(`Finished setStrokeWeightToOne. Updated ${count} nodes.`);
-    figma.notify(`Updated stroke weight for ${count} layer${count !== 1 ? 's' : ''}`);
+    figma.notify(`Updated stroke weight to ${weight}px for ${count} layer${count !== 1 ? 's' : ''}`);
 }
 
 /*

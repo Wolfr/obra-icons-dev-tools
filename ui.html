@@ -76,11 +76,6 @@ a svg * {
    stroke: var(--primary-color);
 }
 
-a.external {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
 
 /* Button */
 
@@ -131,6 +126,11 @@ a.external {
     width: 100%;
 }
 
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
 .button-group.vertical {
     display: flex;
     flex-direction: column;
@@ -151,13 +151,20 @@ a.external {
     <button class="block button secondary" id="createDevCopy">Create dev copy</button>
   </div>
 
-  <p>Note: you might have to click this button twice to get it to work.</p>
-  
-  <p>The dev copy serves as the base for the SVG import. Use the ID on the top right of the generated artboard to use with your SVG import code. For example <code>pnpm run generate:icons 565:116138</code></p>
+  <summary>
+    <details>
+      <p>Note: you might have to click this button twice to get it to work.</p>
+      <p>The dev copy serves as the base for the SVG import. Use the ID on the top right of the generated artboard to use with your SVG import code. For example <code>pnpm run generate:icons 565:116138</code></p>
+    </details>
+  </summary>
 
   <h4>Production actions - Releases - SendOwl</h4>
 
-  <p>Select the frame called “Obra Icons - Original source” and click the button to create a design copy. This runs practically every one of the “production actions” to make a copy that can be used as a base for icons  in a design system.</p>
+  <summary>
+    <details>
+      <p>Select the frame called “Obra Icons - Original source” and click the button to create a design copy. This runs practically every one of the “production actions” to make a copy that can be used as a base for icons  in a design system.</p>
+    </details>
+  </summary>
 
   <div class="button-group vertical">
     <button class="block button secondary" id="createDesignCopy">Create design copy</button>
@@ -165,21 +172,39 @@ a.external {
 
   <h4>Production actions - Design</h4>
 
+  <h4>Clean up initial creation</h4>
+
   <div class="button-group vertical">
     <button class="block button secondary" id="removeAllTopLevelTextLayers">Remove all top-level text layers</button>
+    <button class="block button secondary" id="removeBitmapImages">Remove bitmap Images</button>
+  </div>
 
-    <button class="block button secondary" id="removeBitmapImages">Remove Bitmap Images</button>
+  <h4>Prepare for export</h4>
 
+  <div class="button-group vertical">
+    <div class="button-group">
+      <button class="block button secondary" id="setStrokeWeightButton">Set stroke weight to 1px</button>
+      <button class="block button secondary" id="setStrokeWeight2pxButton">Set stroke weight to 2px</button>
+    </div>
     <button class="block button secondary" id="setConstraintsScale">Set all constraints to scale</button>
+    <div class="button-group">
+      <button class="block button secondary" id="autoColourNamedLayers">Auto-colour named layers</button>
+      <button class="block button secondary" id="harmonizeStrokesAndFills">Colour black</button>
+    </div>
 
+
+    <div class="button-group">
+      <button class="block button secondary" id="snapPixel">Snap to pixel</button>
+      <button class="block button secondary" id="snapHalfPixel">Snap to half pixel</button>
+    </div>
+
+  </div>
+
+
+  <h4>Prepare for production</h4>
+  <div class="button-group vertical">
     <button class="block button secondary" id="mergeAutoLayoutGroups">Merge auto layout groups</button>
-
-    <button class="block button secondary" id="harmonizeStrokesAndFills">Harmonize strokes and fills</button>
-
     <button class="block button secondary" id="deleteKeyShapes">Delete keyshapes</button>
-
-    <button class="block button secondary" id="autoColourNamedLayers">Auto-colour named layers</button>
-
   </div>
 
   <h4>Production actions - To do</h4>
@@ -193,7 +218,6 @@ a.external {
   <div class="button-group vertical">
     <button class="block button secondary" id="reportFillAndStroke">Report on icons that have layers that both have a fill and a stroke</button>
     <button class="block button secondary" id="reportOnGroups" disabled>Report on icons that have groups inside them</button>
-    <button class="block button secondary" id="setStrokeWeightButton">Set Stroke Weight to 1px</button>
   </div>
 
 
@@ -258,8 +282,20 @@ a.external {
     };
 
     document.getElementById('setStrokeWeightButton').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'set-stroke-weight-to-one' } }, '*')
+      parent.postMessage({ pluginMessage: { type: 'set-stroke-weight', weight: 1 } }, '*')
     }
+
+    document.getElementById('setStrokeWeight2pxButton').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'set-stroke-weight', weight: 2 } }, '*')
+    }
+
+    document.getElementById('snapPixel').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'snap-pixel' } }, '*');
+    };
+
+    document.getElementById('snapHalfPixel').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'snap-half-pixel' } }, '*');
+    };
 
     /* This code dynamically resizes the window based on the height of domELtargetNode */
     const domEltargetNode = document.getElementById('app');
